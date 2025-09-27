@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get("/users", async (req, res) => {
   try {
-    const { page = 1, limit = 100, search, role, department } = req.query;
+    const { page = 1, limit = 1000, search, role, department } = req.query;
     
     let query = {};
     
@@ -24,28 +24,46 @@ router.get("/users", async (req, res) => {
       ];
     }
     
-    // Filter by role
-    if (role) {
+    // Filter by role (if specified, otherwise include all roles including admin)
+    if (role && role !== 'all') {
       query.role = role;
     }
     
     // Filter by department
-    if (department) {
+    if (department && department !== 'all') {
       query.department = department;
     }
     
     const skip = (page - 1) * limit;
     
+    // Fetch all users including admins, with all required fields
     const users = await User.find(query)
-      .select('-password')
+      .select('name email role department position phone address hourlyRate createdAt updatedAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
     
     const totalUsers = await User.countDocuments(query);
+    const totalPages = Math.ceil(totalUsers / limit);
     
-    // Return just the users array for frontend compatibility
-    res.json(users);
+    // Log the query and results for debugging
+    console.log(`Admin fetched users - Query:`, JSON.stringify(query));
+    console.log(`Total users found: ${totalUsers} (including admins)`);
+    console.log(`Users returned: ${users.length}`);
+    console.log(`Users details:`, users.map(u => ({ name: u.name, email: u.email, role: u.role })));
+    
+    // Return users with pagination info
+    res.json({
+      users,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalUsers,
+        limit: parseInt(limit),
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Failed to fetch users", error: error.message });
@@ -714,10 +732,37 @@ router.delete("/attendance/:id", async (req, res) => {
   }
 });
 
+// Test endpoint to check all users in database
+router.get("/test-users", async (req, res) => {
+  try {
+    console.log('=== TEST USERS ENDPOINT ===');
+    const allUsers = await User.find({}).select('name email role department position phone address createdAt');
+    console.log('All users in database:', allUsers.map(u => ({ name: u.name, email: u.email, role: u.role })));
+    
+    const adminUsers = await User.find({ role: 'admin' }).select('name email role department position phone address createdAt');
+    console.log('Admin users found:', adminUsers.map(u => ({ name: u.name, email: u.email, role: u.role })));
+    
+    const regularUsers = await User.find({ role: 'user' }).select('name email role department position phone address createdAt');
+    console.log('Regular users found:', regularUsers.map(u => ({ name: u.name, email: u.email, role: u.role })));
+    
+    res.json({
+      totalUsers: allUsers.length,
+      allUsers: allUsers,
+      adminUsers: adminUsers,
+      regularUsers: regularUsers,
+      message: 'Test endpoint - check console for details'
+    });
+  } catch (error) {
+    console.error('Error in test-users endpoint:', error);
+    res.status(500).json({ message: 'Error testing users', error: error.message });
+  }
+});
+
 // Get system overview statistics
 router.get("/overview", async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
+    // Count all users including admins (no filters applied)
+    const totalUsers = await User.countDocuments({});
     const totalAttendanceRecords = await Attendance.countDocuments();
     
     // Get current month stats
@@ -757,7 +802,8 @@ router.get("/overview", async (req, res) => {
       lastUpdated: new Date()
     };
     
-    console.log('Admin fetched system overview');
+    console.log(`Admin fetched system overview - Total Users: ${totalUsers} (including admins)`);
+    console.log(`Role breakdown:`, roleStats);
     res.json(overview);
   } catch (error) {
     console.error("Error fetching system overview:", error);
