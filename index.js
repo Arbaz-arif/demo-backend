@@ -15,8 +15,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors({
     origin: [
       "http://localhost:3000",
-      "https://attendance-frontend-sepia.vercel.app",
-      "https://attendance-frontend-sepia.vercel.app/",
+      "https://demo-frontend-o8yzw3o0d-arbazs-projects-f7599764.vercel.app",
+      "https://demo-frontend-o8yzw3o0d-arbazs-projects-f7599764.vercel.app/",
       "https://*.vercel.app" // Allow any Vercel subdomain
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
