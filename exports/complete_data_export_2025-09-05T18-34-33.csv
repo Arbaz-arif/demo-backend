@@ -1,0 +1,14 @@
+Section,Data Type,Value,Details
+OVERVIEW,Total Users,4,All Time
+OVERVIEW,Total Attendance Records,0,All Time
+OVERVIEW,Total Leave Applications,1,All Time
+OVERVIEW,Users with Salary Data,0,All Time
+OVERVIEW,Present Records,0,All Time
+OVERVIEW,Absent Records,0,All Time
+OVERVIEW,Leave Records,0,All Time
+OVERVIEW,Late Records,0,All Time
+USERS,User Record,Arbaz Ahmed,kamrabn34@gmail.com - IT - user
+USERS,User Record,Arbaz Ahmed,kamrabn7@gmail.com -  - user
+USERS,User Record,ali,kamrabn8@gmail.com - IT - user
+USERS,User Record,kamran,kamrabn4@gmail.com -  - admin
+LEAVES,Leave Application,Unknown,casual - 9/4/2025 to 9/10/2025 - approved
