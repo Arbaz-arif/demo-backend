@@ -14,9 +14,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors({
     origin: [
-      "http://localhost:3000",
-      "https://demo-frontend-o8yzw3o0d-arbazs-projects-f7599764.vercel.app",
-      "https://demo-frontend-o8yzw3o0d-arbazs-projects-f7599764.vercel.app/",
+      "http://localhost:3000", // local development
+      "https://demo-frontend-three-pi.vercel.app", // your deployed frontend
+      "https://demo-frontend-o8yzw3o0d-arbazs-projects-f7599764.vercel.app", // previous domain
       "https://*.vercel.app" // Allow any Vercel subdomain
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
