@@ -350,19 +350,47 @@ router.delete("/users/:id", async (req, res) => {
       return res.status(400).json({ message: "Cannot delete your own account" });
     }
     
-    // Check if user has attendance records
-    const attendanceCount = await Attendance.countDocuments({ userId: id });
-    if (attendanceCount > 0) {
-      return res.status(400).json({ 
-        message: "Cannot delete user with existing attendance records. Please delete attendance records first.",
-        attendanceCount
-      });
+    // Delete all associated records first
+    const attendanceResult = await Attendance.deleteMany({ userId: id });
+    console.log(`Deleted ${attendanceResult.deletedCount} attendance records for user: ${user.name}`);
+    
+    // Delete salary records if they exist
+    try {
+      const Salary = require('../models/Salary');
+      const salaryResult = await Salary.deleteMany({ userId: id });
+      console.log(`Deleted ${salaryResult.deletedCount} salary records for user: ${user.name}`);
+    } catch (salaryError) {
+      console.log('No salary records to delete or salary model not found:', salaryError.message);
     }
     
+    // Delete leave records if they exist
+    try {
+      const Leave = require('../models/Leave');
+      const leaveResult = await Leave.deleteMany({ userId: id });
+      console.log(`Deleted ${leaveResult.deletedCount} leave records for user: ${user.name}`);
+    } catch (leaveError) {
+      console.log('No leave records to delete or leave model not found:', leaveError.message);
+    }
+    
+    // Delete active sessions for this user
+    try {
+      const ActiveSession = require('../models/ActiveSession');
+      const sessionResult = await ActiveSession.deleteMany({ userId: id });
+      console.log(`Deleted ${sessionResult.deletedCount} active sessions for user: ${user.name}`);
+    } catch (sessionError) {
+      console.log('No active sessions to delete or session model not found:', sessionError.message);
+    }
+    
+    // Finally delete the user
     await User.findByIdAndDelete(id);
     console.log(`Admin deleted user: ${user.name} (${id})`);
     
-    res.json({ message: "User deleted successfully" });
+    res.json({ 
+      message: "User and all associated records deleted successfully",
+      deletedRecords: {
+        attendance: attendanceResult.deletedCount
+      }
+    });
   } catch (error) {
     console.error("Error deleting user:", error);
     if (error.name === 'CastError') {
@@ -2917,6 +2945,39 @@ router.delete("/admin-sessions/clear-all", async (req, res) => {
   } catch (error) {
     console.error('Error clearing all sessions:', error);
     res.status(500).json({ message: 'Failed to clear all sessions', error: error.message });
+  }
+});
+
+// Delete all attendance records for a specific user
+router.delete("/attendance/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId || userId === 'undefined') {
+      return res.status(400).json({ message: "Valid user ID is required" });
+    }
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Delete all attendance records for this user
+    const result = await Attendance.deleteMany({ userId: userId });
+    
+    console.log(`Admin deleted ${result.deletedCount} attendance records for user: ${user.name} (${userId})`);
+    
+    res.json({ 
+      message: `Deleted ${result.deletedCount} attendance records for user ${user.name}`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error("Error deleting attendance records for user:", error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+    res.status(500).json({ message: "Failed to delete attendance records", error: error.message });
   }
 });
 
