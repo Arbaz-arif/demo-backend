@@ -176,11 +176,46 @@ router.get("/users/:id", async (req, res) => {
   }
 });
 
+// Get user details with password (admin only)
+router.get("/users/:id/with-password", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id || id === 'undefined') {
+      return res.status(400).json({ message: "Valid user ID is required" });
+    }
+    
+    // Include password field for admin use
+    const user = await User.findById(id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    console.log(`Admin fetched user details with password: ${user.name} (${id})`);
+    console.log(`Password field: ${user.password}`);
+    console.log(`Password type: ${typeof user.password}`);
+    console.log(`Password length: ${user.password ? user.password.length : 'null'}`);
+    
+    // Return user with password (for admin use)
+    res.json({
+      ...user.toObject(),
+      password: user.password // Include the hashed password
+    });
+  } catch (error) {
+    console.error("Error fetching user details with password:", error);
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid user ID format" });
+    }
+    res.status(500).json({ message: "Failed to fetch user details", error: error.message });
+  }
+});
+
 // Update user profile (allows users to update their own profile or admins to update any profile)
 router.put("/users/:id", verifyUserOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, department, position, phone, address, blocked, hourlyRate } = req.body;
+    const { name, email, password, role, department, position, phone, address, blocked, hourlyRate } = req.body;
     
     if (!id || id === 'undefined') {
       return res.status(400).json({ message: "Valid user ID is required" });
@@ -234,6 +269,16 @@ router.put("/users/:id", verifyUserOrAdmin, async (req, res) => {
       phone: phone ? phone.trim() : '',
       address: address ? address.trim() : ''
     };
+    
+    // Handle password update (only if provided)
+    if (password && password.trim() !== '') {
+      // Hash the password before storing
+      const bcrypt = require('bcryptjs');
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password.trim(), saltRounds);
+      updateData.password = hashedPassword;
+      console.log('Password updated for user:', userToUpdate.email);
+    }
     
     // Only admins can update role, blocked status, and hourly rate
     if (isAdmin) {
@@ -365,7 +410,7 @@ router.delete("/users/:id", async (req, res) => {
     
     // Delete leave records if they exist
     try {
-      const Leave = require('../models/Leave');
+      const Leave = require('../Models/Leave');
       const leaveResult = await Leave.deleteMany({ userId: id });
       console.log(`Deleted ${leaveResult.deletedCount} leave records for user: ${user.name}`);
     } catch (leaveError) {
@@ -374,7 +419,7 @@ router.delete("/users/:id", async (req, res) => {
     
     // Delete active sessions for this user
     try {
-      const ActiveSession = require('../models/ActiveSession');
+      const ActiveSession = require('../Models/ActiveSession');
       const sessionResult = await ActiveSession.deleteMany({ userId: id });
       console.log(`Deleted ${sessionResult.deletedCount} active sessions for user: ${user.name}`);
     } catch (sessionError) {
