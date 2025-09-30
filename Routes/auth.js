@@ -5,6 +5,7 @@ const User = require("../Models/User");
 
 const router = express.Router();
 
+
 // Debug endpoint
 router.get("/debug", async (req, res) => {
   try {
@@ -15,23 +16,68 @@ router.get("/debug", async (req, res) => {
   }
 });
 
+// Test password endpoint
+router.post("/test-password", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.json({ found: false });
+    }
+    
+    const isValid = await user.comparePassword(password);
+    res.json({ found: true, valid: isValid });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create test user endpoint
+router.post("/create-test-user", async (req, res) => {
+  try {
+    const testUser = new User({
+      name: "Test User",
+      email: "test@example.com",
+      password: "password123",
+      role: "user",
+      department: "IT",
+      position: "Developer",
+      phone: "1234567890",
+      address: "Test Address",
+      hourlyRate: 25,
+      totalWorkTime: 0,
+      currentSalary: 0
+    });
+    
+    await testUser.save();
+    res.json({ 
+      message: "Test user created successfully",
+      email: "test@example.com",
+      password: "password123"
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("Login attempt for email:", email);
+    
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+    
     const user = await User.findOne({ email });
-    console.log("User found:", user ? user.email : "null");
 
     if (!user) {
-      console.log("User not found for email:", email);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const passwordValid = await user.comparePassword(password);
-    console.log("Password valid:", passwordValid);
 
     if (!passwordValid) {
-      console.log("Invalid password for user:", email);
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -50,7 +96,6 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET || "your-secret-key",
       { expiresIn: "1d" }
     );
-    console.log("Login successful for user:", user.email);
     res.json({ token });
   } catch (err) {
     console.error("Login error:", err);

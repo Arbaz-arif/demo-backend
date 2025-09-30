@@ -73,7 +73,7 @@ router.get("/users", async (req, res) => {
 // Create new user (admin only)
 router.post("/users", async (req, res) => {
   try {
-    const { name, email, password, role = 'user', department, position, phone, address, hourlyRate = 0 } = req.body;
+    const { name, email, password, role = 'user', department, position, phone, address, hourlyRate = 0, totalWorkTime = 0, currentSalary = 0 } = req.body;
     
     // Validate required fields
     if (!name || !email || !password) {
@@ -107,7 +107,9 @@ router.post("/users", async (req, res) => {
       position: position ? position.trim() : '',
       phone: phone ? phone.trim() : '',
       address: address ? address.trim() : '',
-      hourlyRate: parseFloat(hourlyRate) || 0
+      hourlyRate: parseFloat(hourlyRate) || 0,
+      totalWorkTime: parseFloat(totalWorkTime) || 0,
+      currentSalary: parseFloat(currentSalary) || 0
     });
     
     await newUser.save();
@@ -215,7 +217,7 @@ router.get("/users/:id/with-password", async (req, res) => {
 router.put("/users/:id", verifyUserOrAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password, role, department, position, phone, address, blocked, hourlyRate } = req.body;
+    const { name, email, password, role, department, position, phone, address, blocked, hourlyRate, totalWorkTime, currentSalary } = req.body;
     
     if (!id || id === 'undefined') {
       return res.status(400).json({ message: "Valid user ID is required" });
@@ -280,11 +282,13 @@ router.put("/users/:id", verifyUserOrAdmin, async (req, res) => {
       console.log('Password updated for user:', userToUpdate.email);
     }
     
-    // Only admins can update role, blocked status, and hourly rate
+    // Only admins can update role, blocked status, hourly rate, and timer data
     if (isAdmin) {
       updateData.role = role || userToUpdate.role;
       updateData.blocked = blocked !== undefined ? blocked : userToUpdate.blocked;
       updateData.hourlyRate = hourlyRate !== undefined ? parseFloat(hourlyRate) : userToUpdate.hourlyRate;
+      updateData.totalWorkTime = totalWorkTime !== undefined ? parseFloat(totalWorkTime) : userToUpdate.totalWorkTime;
+      updateData.currentSalary = currentSalary !== undefined ? parseFloat(currentSalary) : userToUpdate.currentSalary;
     }
     
     const updatedUser = await User.findByIdAndUpdate(

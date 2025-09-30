@@ -47,6 +47,16 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  totalWorkTime: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  currentSalary: {
+    type: Number,
+    default: 0,
+    min: 0
   }
 }, {
   timestamps: true // Automatically adds createdAt & updatedAt
