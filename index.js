@@ -28,6 +28,7 @@ app.use(cors({
 // Initialize DB connection
 dbConnect();
 
+
 // Routes
 app.use("/api/products", productRoute);
 app.use("/api/auth", require("./Routes/auth.js"));
@@ -60,6 +61,7 @@ app.get('/ping', (req, res) => {
         origin: req.headers.origin || 'no-origin'
     });
 });
+
 
 // (health endpoint removed)
 
